@@ -86,7 +86,7 @@ void StepperMotor::SetMotorSpeed()
   int abs_ticks_to_move;
   if (_current_state_in_ticks == _intermediate_ticks)
   {
-    Serial.print("how is this possible");
+    //Serial.print("how is this possible");
     // we're already there, so no need to update anything
     // hopefully somebody else will stop this process soon
     return;
@@ -119,10 +119,6 @@ void StepperMotor::SetMotorSpeed()
   if (current_time_millis >= _intermediate_time_millis || _motor_tick_period_micros < MIN_TICK_PERIOD_MICROS) {
     _motor_tick_period_micros = MIN_TICK_PERIOD_MICROS;    
   }
-  Serial.print(_destination_in_ticks);
-  Serial.print(" and ");
-  Serial.print(_intermediate_ticks);
-  Serial.print("\n");
 }
 
 void StepperMotor::UpdatePosition()
