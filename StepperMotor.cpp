@@ -87,7 +87,10 @@ StepperMotor::StepperMotor(int ticks_per_revolution,
   _motor_acceleration_ticks_per_micro_squared = motor_acceleration_ticks_per_micro_squared;
 
   _is_destination_active = false; 
+  // initialize motor direction to a dummy value
   _motor_direction = -1;
+  // but be sure you're actually set to that value
+  digitalWrite(_direction_pin, HIGH);
   _current_speed_ticks_per_micro = 0;
 }
 
@@ -150,11 +153,6 @@ void StepperMotor::UpdateSpeed()
   {
     _motor_tick_period_micros = abs(1.0/_current_speed_ticks_per_micro);
   }
-  
-  //Serial.print(_target_speed_ticks_per_micro * 1e3);
-  //Serial.print(" is target ");
-  //Serial.print(_current_state_in_ticks);
-  //Serial.print(" is position\n");
 
   UpdateMotorDirectionPin();
 
