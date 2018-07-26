@@ -14,8 +14,6 @@ class StepperMotor
     void SetTarget(unsigned long destination_time_millis, float destination_angle);
     // Check if it's time to take a motor tick, and if so, take a tick
     void UpdatePosition();
-    // update the params that define the motor speed
-    void SetMotorSpeed();
   private:
     int ConvertAngleToTicks(float angle);
     //
@@ -32,27 +30,12 @@ class StepperMotor
     //
     // when to arrive at destination (in millis since start of arduino)
     unsigned long _destination_time_millis;
-    // when the _destination_time_millis attribute was last set
-    unsigned long _destination_creation_millis;
     // target destination (in motor ticks. 0 is ref config)
     int _destination_in_ticks;
     // Whether or not we are actively pursuing a course to the destination or not
     // This can be set to false in order to immediately stop the motor (should also be false during calibration)
     // Setting this to false is basically like setting _destination_in_ticks to NULL
     bool _is_destination_active;
-    //
-    // variables related to intermediate target
-    // we use an intermediate target in order to smooth
-    // out target changes
-    //
-    // how long to update intermediate target to new target
-    int _direction_change_time_millis;
-    // intermediate target in ticks
-    int _intermediate_ticks;
-    // intermediate target time
-    unsigned long _intermediate_time_millis;
-    int _previous_destination_in_ticks;
-    unsigned long _previous_destination_time_millis;
     //
     // variables related to current motor state
     //

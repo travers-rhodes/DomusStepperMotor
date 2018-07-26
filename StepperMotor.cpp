@@ -20,7 +20,6 @@ StepperMotor::StepperMotor(int ticks_per_revolution, float gear_ratio, float min
   _direction_pin = direction_pin;
   _is_destination_active = false; 
   _motor_direction = 0;
-  _direction_change_time_millis = 500;
 }
 
 void StepperMotor::Calibrate(float current_angle)
@@ -29,77 +28,29 @@ void StepperMotor::Calibrate(float current_angle)
   _current_state_in_ticks = ConvertAngleToTicks(current_angle);
 }
 
-// SetTarget notes the user-requested final joint location at the given time.
 void StepperMotor::SetTarget(unsigned long destination_time_millis, float destination_angle)
 {
-  // this destination won't be made active if we're trying to go back in time
-  unsigned long current_time_millis = millis();
-  if (current_time_millis >= destination_time_millis)
-  {
-    //Serial.print("Can't go back in time");
-    return;
-  }
-
-  if (_is_destination_active)
-  {
-    _previous_destination_in_ticks = _intermediate_ticks;
-    // max is a preprocessor macro...
-    _previous_destination_time_millis = max(current_time_millis, _intermediate_time_millis);
-  }
-  else
-  {
-    _previous_destination_in_ticks = _current_state_in_ticks;
-    _previous_destination_time_millis = current_time_millis;
-    _intermediate_ticks = _current_state_in_ticks;
-    _intermediate_time_millis = current_time_millis;
-  }
-  
   _is_destination_active = false;
   _destination_time_millis = destination_time_millis;
   _destination_in_ticks = ConvertAngleToTicks(destination_angle);
+  //Serial.print(_destination_in_ticks);
   _last_motor_uptick_micros = micros();
-
-
-  _destination_creation_millis = current_time_millis;
-
-  _is_destination_active = true;
-}
-
-// SetIntermediateTarget sets the motor speed to try to move to the given intermediate target at the intermediate time
-// We use a more slowly varying intermediate target as a way to try make the arm move smoothly 
-void StepperMotor::SetMotorSpeed()
-{
-  unsigned long current_time_millis = millis();
-  if (current_time_millis > _destination_creation_millis + _direction_change_time_millis)
-  {
-    _intermediate_ticks = _destination_in_ticks;
-    _intermediate_time_millis = _destination_time_millis;
-  }
-  else
-  {
-    float interp_fraction = float(current_time_millis - _destination_creation_millis) / _direction_change_time_millis;
-    _intermediate_ticks = _previous_destination_in_ticks + float(_destination_in_ticks - _previous_destination_in_ticks) * interp_fraction;
-    _intermediate_time_millis = _previous_destination_time_millis + float(_destination_time_millis - _previous_destination_time_millis) * interp_fraction;
-  }
-  
   // set the motor direction as needed
   int abs_ticks_to_move;
-  if (_current_state_in_ticks == _intermediate_ticks)
+  if (_current_state_in_ticks == _destination_in_ticks)
   {
-    Serial.print("how is this possible");
-    // we're already there, so no need to update anything
-    // hopefully somebody else will stop this process soon
+    // we're already there, so no need to move
     return;
   }
   
-  if (_current_state_in_ticks >= _intermediate_ticks)
+  if (_current_state_in_ticks >= _destination_in_ticks)
   {
     if (_motor_direction != -1) {
       digitalWrite(_direction_pin, HIGH);
       _motor_direction = -1;
     }
     //Serial.print("going right");
-    abs_ticks_to_move = _current_state_in_ticks - _intermediate_ticks;
+    abs_ticks_to_move = _current_state_in_ticks - _destination_in_ticks;
   }
   else
   {
@@ -108,21 +59,22 @@ void StepperMotor::SetMotorSpeed()
       _motor_direction = 1;
     }
     //Serial.print("going left");
-    abs_ticks_to_move = _intermediate_ticks - _current_state_in_ticks;
+    abs_ticks_to_move = _destination_in_ticks - _current_state_in_ticks;
+  } 
+  unsigned long current_time_millis = millis();
+  if (current_time_millis >= _destination_time_millis)
+  {
+    //Serial.print("we can't go back in time");
+    return;
   }
-
-  _motor_tick_period_micros = (unsigned long)((_intermediate_time_millis - current_time_millis) * 1000)/abs_ticks_to_move;
-
-  // if you're either trying to go back in time
-  // or you're trying to go too fast
-  // then go at max speed instead
-  if (current_time_millis >= _intermediate_time_millis || _motor_tick_period_micros < MIN_TICK_PERIOD_MICROS) {
+   
+  _motor_tick_period_micros = (unsigned long)((_destination_time_millis - current_time_millis) * 1000)/abs_ticks_to_move;
+  if (_motor_tick_period_micros < MIN_TICK_PERIOD_MICROS) {
     _motor_tick_period_micros = MIN_TICK_PERIOD_MICROS;    
   }
-  Serial.print(_destination_in_ticks);
-  Serial.print(" and ");
-  Serial.print(_intermediate_ticks);
-  Serial.print("\n");
+  //Serial.print(_motor_tick_period_micros);
+  _is_destination_active = true;
+  //Serial.print(_is_destination_active);
 }
 
 void StepperMotor::UpdatePosition()
@@ -136,12 +88,8 @@ void StepperMotor::UpdatePosition()
   //{
   //  _is_destination_active = false;
   //}
-  if ((_motor_direction == -1 
-          && _current_state_in_ticks <= _destination_in_ticks 
-          && _destination_in_ticks == _intermediate_ticks)
-     || (_motor_direction == 1 
-          && _current_state_in_ticks >= _destination_in_ticks
-          && _destination_in_ticks == _intermediate_ticks))
+  if ((_motor_direction == -1 && _current_state_in_ticks <= _destination_in_ticks) ||
+      (_motor_direction == 1 && _current_state_in_ticks >= _destination_in_ticks))
   {
     _is_destination_active = false;
   }
