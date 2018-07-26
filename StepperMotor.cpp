@@ -19,7 +19,7 @@ StepperMotor::StepperMotor(int ticks_per_revolution, float gear_ratio, float min
   _step_pin = step_pin;
   _direction_pin = direction_pin;
   _is_destination_active = false; 
-  _motor_direction = 0;
+  _motor_direction = -1;
 }
 
 void StepperMotor::Calibrate(float current_angle)
@@ -88,8 +88,7 @@ void StepperMotor::UpdatePosition()
   //{
   //  _is_destination_active = false;
   //}
-  if ((_motor_direction == -1 && _current_state_in_ticks <= _destination_in_ticks) ||
-      (_motor_direction == 1 && _current_state_in_ticks >= _destination_in_ticks))
+  if (_current_state_in_ticks >= _destination_in_ticks)
   {
     _is_destination_active = false;
   }
