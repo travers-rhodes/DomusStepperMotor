@@ -19,10 +19,8 @@ StepperMotor::StepperMotor(int ticks_per_revolution, float gear_ratio, float min
   _step_pin = step_pin;
   _direction_pin = direction_pin;
   _is_destination_active = false; 
-  // lol. Setting this to zero caused in infinite loop because the code didn't think the current state
-  // was updating.
-  _motor_direction = -1;
-  _direction_change_time_millis = 1000;
+  _motor_direction = 0;
+  _direction_change_time_millis = 500;
 }
 
 void StepperMotor::Calibrate(float current_angle)
@@ -38,7 +36,7 @@ void StepperMotor::SetTarget(unsigned long destination_time_millis, float destin
   unsigned long current_time_millis = millis();
   if (current_time_millis >= destination_time_millis)
   {
-    //("Can't go back in time");
+    //Serial.print("Can't go back in time");
     return;
   }
 
@@ -53,13 +51,14 @@ void StepperMotor::SetTarget(unsigned long destination_time_millis, float destin
     _previous_destination_in_ticks = _current_state_in_ticks;
     _previous_destination_time_millis = current_time_millis;
     _intermediate_ticks = _current_state_in_ticks;
-    _intermediate_time_millis = current_time_millis + 100;
+    _intermediate_time_millis = current_time_millis;
   }
   
   _is_destination_active = false;
   _destination_time_millis = destination_time_millis;
   _destination_in_ticks = ConvertAngleToTicks(destination_angle);
   _last_motor_uptick_micros = micros();
+
 
   _destination_creation_millis = current_time_millis;
 
@@ -82,22 +81,24 @@ void StepperMotor::SetMotorSpeed()
     _intermediate_ticks = _previous_destination_in_ticks + float(_destination_in_ticks - _previous_destination_in_ticks) * interp_fraction;
     _intermediate_time_millis = _previous_destination_time_millis + float(_destination_time_millis - _previous_destination_time_millis) * interp_fraction;
   }
-
+  
   // set the motor direction as needed
   int abs_ticks_to_move;
   if (_current_state_in_ticks == _intermediate_ticks)
   {
+    //Serial.print("how is this possible");
     // we're already there, so no need to update anything
     // hopefully somebody else will stop this process soon
     return;
   }
+  
   if (_current_state_in_ticks >= _intermediate_ticks)
   {
     if (_motor_direction != -1) {
       digitalWrite(_direction_pin, HIGH);
       _motor_direction = -1;
     }
-    //("going right");
+    //Serial.print("going right");
     abs_ticks_to_move = _current_state_in_ticks - _intermediate_ticks;
   }
   else
@@ -106,7 +107,7 @@ void StepperMotor::SetMotorSpeed()
       digitalWrite(_direction_pin, LOW);
       _motor_direction = 1;
     }
-    //("going left");
+    //Serial.print("going left");
     abs_ticks_to_move = _intermediate_ticks - _current_state_in_ticks;
   }
 
@@ -124,7 +125,6 @@ void StepperMotor::UpdatePosition()
 {
   if (!_is_destination_active) {
     // if we're not trying to go anywhere, don't do anything
-    //("not going anywhere\n");
     return;
   }
   // we've taken long enough, so stop moving
@@ -132,22 +132,26 @@ void StepperMotor::UpdatePosition()
   //{
   //  _is_destination_active = false;
   //}
-  // simplest stop command imaginable
-  if (_current_state_in_ticks == _destination_in_ticks)
+  if ((_motor_direction == -1 
+          && _current_state_in_ticks <= _destination_in_ticks 
+          && _destination_in_ticks == _intermediate_ticks)
+     || (_motor_direction == 1 
+          && _current_state_in_ticks >= _destination_in_ticks
+          && _destination_in_ticks == _intermediate_ticks))
   {
     _is_destination_active = false;
   }
   if (_is_stepper_signal_high && (micros() > _last_motor_uptick_micros + PULSE_LENGTH_MICROS))
   {
     digitalWrite(_step_pin, LOW);
-    //("Going low\n");
+    //Serial.print("Going low\n");
     _is_stepper_signal_high = false;
     return;
   }
   if (!_is_stepper_signal_high && micros() > _last_motor_uptick_micros + _motor_tick_period_micros)
   {
     digitalWrite(_step_pin, HIGH);
-    //("Going high\n");
+    //Serial.print("Going high\n");
     _is_stepper_signal_high = true;
     _last_motor_uptick_micros = micros();
     //update the current state
