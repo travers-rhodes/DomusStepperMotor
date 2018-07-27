@@ -1,5 +1,4 @@
 #include "StepperMotor.h"
-#include "Arduino.h"
 
 const int PULSE_LENGTH_MICROS = 200;
 

@@ -1,5 +1,6 @@
 #ifndef DOMUS_MOTOR_H_
 #define DOMUS_MOTOR_H_
+#include "Arduino.h"
 
 class StepperMotor
 {
