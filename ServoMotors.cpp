@@ -2,14 +2,18 @@
 
 ServoMotors::ServoMotors(int rx_pin, int tx_pin) : _servo_serial(rx_pin, tx_pin)
 {
+  _last_update_time_millis = millis();
+}
+
+// initialize connection
+void ServoMotors::Initialize()
+{
   _servo_serial.begin(115200);
   _servos.begin(_servo_serial);
   for (int i = 1; i <= 3; i++){
     delay(10);
     _servos.setJointSpeed(i, 100);
   }
-
-  _last_update_time_millis = millis();
 }
 
 void ServoMotors::SetFifthJoint(float angle)

@@ -8,6 +8,7 @@ class ServoMotors
 {
   public:
     ServoMotors(int rx_pin, int tx_pin);
+    void Initialize();
     void SetFifthJoint(float angle);
     void SetSixthJoint(float angle);
     // we want to update servo positions with a 10millisecond offset between each

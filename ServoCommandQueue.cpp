@@ -10,7 +10,7 @@ ServoCommandQueue::ServoCommandQueue()
 void ServoCommandQueue::push(const ServoCommand i)
 {
   _queue_array[_tail++] = i;
-  if (_tail = _size)
+  if (_tail == _size)
   {
     _tail = 0;
   }
@@ -31,6 +31,7 @@ ServoCommand ServoCommandQueue::pop()
     _head = 0;
   }
   _num_items--;
+  return return_val;
 }
 
 int ServoCommandQueue::size()
