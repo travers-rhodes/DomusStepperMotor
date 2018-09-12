@@ -12,7 +12,7 @@ void ServoMotors::Initialize()
   _servos.begin(_servo_serial);
   for (int i = 1; i <= 3; i++){
     delay(10);
-    _servos.setJointSpeed(i, 50);
+    _servos.setJointSpeed(i, 25);
   }
 }
 
